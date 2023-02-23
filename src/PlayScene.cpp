@@ -54,7 +54,7 @@ void PlayScene::HandleEvents()
 }
 
 template <typename T>
-T* PlayScene::m_addNavigationObjectToGrid(T* object, const int col, const int row, const TileStatus status)
+void PlayScene::m_addObjectToGrid(T*& object, const int col, const int row, const TileStatus status)
 {
 	const auto offset = glm::vec2(Config::TILE_SIZE * 0.5f, Config::TILE_SIZE * 0.5f);
 	object = new T();
@@ -62,10 +62,36 @@ T* PlayScene::m_addNavigationObjectToGrid(T* object, const int col, const int ro
 	object->SetGridPosition(static_cast<float>(col), static_cast<float>(row));
 	m_getTile(col, row)->SetTileStatus(status);
 	AddChild(object);
-	return object;
+	//return object;
 }
 
 
+template <typename T>
+void PlayScene::m_moveGameObject(T*& object, int col, int row, TileStatus status) {
+
+	constexpr auto offset = glm::vec2(Config::TILE_SIZE * 0.5f, Config::TILE_SIZE * 0.5f);
+
+
+	if (m_getTile(object->GetGridPosition())->GetTileStatus() != TileStatus::IMPASSABLE) {
+
+		m_getTile(object->GetGridPosition())->SetTileStatus(TileStatus::UNVISITED);
+
+	}
+
+	m_pTarget->GetTransform()->position =
+		m_getTile(col,row)->GetTransform()->position + offset;
+	m_pTarget->SetGridPosition(static_cast<float>(col), static_cast<float>(row));
+
+	if (m_getTile(object->GetGridPosition())->GetTileStatus() != TileStatus::IMPASSABLE) {
+		m_getTile(object->GetGridPosition())->SetTileStatus(status);
+
+
+	}
+
+	//m_computeTileCosts();
+
+
+}
 
 void PlayScene::Start()
 {
@@ -77,12 +103,12 @@ void PlayScene::Start()
 	m_currentHeuristic = Heuristic::MANHATTAN;
 
 	// Add the Target to the Scene
-	m_pTarget = m_addNavigationObjectToGrid(m_pTarget, 15, 11, TileStatus::GOAL);
+	m_addObjectToGrid(m_pTarget, 15, 11, TileStatus::GOAL);
 
 	// Add the StarShip to the Scene
-	m_pStarShip = m_addNavigationObjectToGrid(m_pStarShip, 1, 3, TileStatus::START);
+	m_addObjectToGrid(m_pStarShip, 1, 3, TileStatus::START);
 
-	m_markImpassable();
+	//m_markImpassable();
 
 	// Preload Sounds
 
@@ -145,12 +171,10 @@ void PlayScene::GUI_Function()
 			start_position[1] = Config::ROW_NUM - 1;
 		}
 
-		// convert grid space to world space
-		m_getTile(m_pStarShip->GetGridPosition())->SetTileStatus(TileStatus::UNVISITED);
-		m_pStarShip->GetTransform()->position = 
-			m_getTile(start_position[0], start_position[1])->GetTransform()->position + offset;
-		m_pStarShip->SetGridPosition(start_position[0], start_position[1]);
-		m_getTile(m_pStarShip->GetGridPosition())->SetTileStatus(TileStatus::START);
+
+		m_moveGameObject(m_pTarget, start_position[0], start_position[1], TileStatus::GOAL);
+
+
 	}
 
 	ImGui::Separator();
@@ -167,12 +191,9 @@ void PlayScene::GUI_Function()
 			goal_position[1] = Config::ROW_NUM - 1;
 		}
 
-		// convert grid space to world space
-		m_getTile(m_pTarget->GetGridPosition())->SetTileStatus(TileStatus::UNVISITED);
-		m_pTarget->GetTransform()->position =
-			m_getTile(goal_position[0], goal_position[1])->GetTransform()->position + offset;
-		m_pTarget->SetGridPosition(goal_position[0], goal_position[1]);
-		m_getTile(m_pTarget->GetGridPosition())->SetTileStatus(TileStatus::GOAL);
+
+		m_moveGameObject(m_pTarget, goal_position[0], goal_position[1], TileStatus::GOAL);
+
 		m_computeTileCosts();
 	}
 
