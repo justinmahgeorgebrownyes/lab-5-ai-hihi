@@ -44,7 +44,16 @@ private:
 	void m_computeTileCosts();
 
 	// obstacle list
-	Obstacle* m_pObstacleList[25];
+	std::vector<Obstacle*> m_pObstacles;
+	void m_buildObstacles();
+
+	//utiltiy
+	void m_removeObstacleAt(int col, int row);
+	void m_removeObstacleAt(glm::vec2 grid_position);
+	void m_removeAllObstacles();
+
+
+
 
 	// calculate shortest path functions
 	void m_findShortestPath();
@@ -65,7 +74,7 @@ private:
 	template <typename T>
 	T* m_addNavigationObjectToGrid(T* object, int col, int row, TileStatus status);
 
-	void m_markImpassable();
+	//void m_markImpassable();
 
 	// heuristic
 	Heuristic m_currentHeuristic;

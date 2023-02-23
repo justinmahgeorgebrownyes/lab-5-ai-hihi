@@ -218,6 +218,7 @@
     <ClInclude Include="..\src\Sprite.h" />
     <ClInclude Include="..\src\StarShip.h" />
     <ClInclude Include="..\src\Tile.h" />
+    <ClInclude Include="..\src\TileComparator.h" />
     <ClInclude Include="..\src\TileStatus.h" />
     <ClInclude Include="..\src\UIControl.h" />
     <ClInclude Include="..\src\DisplayObject.h" />

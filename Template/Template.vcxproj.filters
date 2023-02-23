@@ -314,6 +314,9 @@
     <ClInclude Include="..\src\Heuristic.h">
       <Filter>Navigation</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\TileComparator.h">
+      <Filter>Navigation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md">
