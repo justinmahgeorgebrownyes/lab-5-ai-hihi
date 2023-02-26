@@ -75,6 +75,7 @@ void PlayScene::m_moveGameObject(T*& object, int col, int row, TileStatus status
 	if (m_getTile(object->GetGridPosition())->GetTileStatus() != TileStatus::IMPASSABLE) {
 
 		m_getTile(object->GetGridPosition())->SetTileStatus(TileStatus::UNVISITED);
+		m_updateTileMap(object->GetGridPosition(), TileStatus::UNVISITED);
 
 	}
 
@@ -85,6 +86,7 @@ void PlayScene::m_moveGameObject(T*& object, int col, int row, TileStatus status
 	if (m_getTile(object->GetGridPosition())->GetTileStatus() != TileStatus::IMPASSABLE) {
 		m_getTile(object->GetGridPosition())->SetTileStatus(status);
 
+		m_updateTileMap(col, row, status);
 
 	}
 
@@ -98,15 +100,26 @@ void PlayScene::Start()
 	// Set GUI Title
 	m_guiTitle = "Play Scene";
 
+
+	m_buildObstacles();
+
+
+
 	m_buildGrid();
-	auto offset = glm::vec2(Config::TILE_SIZE * 0.5f, Config::TILE_SIZE * 0.5f);
+	//auto offset = glm::vec2(Config::TILE_SIZE * 0.5f, Config::TILE_SIZE * 0.5f);
 	m_currentHeuristic = Heuristic::MANHATTAN;
 
-	// Add the Target to the Scene
-	m_addObjectToGrid(m_pTarget, 15, 11, TileStatus::GOAL);
+	m_initializeTileMap();
+	m_buildTileMap();
+
 
 	// Add the StarShip to the Scene
-	m_addObjectToGrid(m_pStarShip, 1, 3, TileStatus::START);
+	//m_addObjectToGrid(m_pStarShip, 1, 3, TileStatus::START);
+
+	// Add the Target to the Scene
+	//m_addObjectToGrid(m_pTarget, 15, 11, TileStatus::GOAL);
+
+	
 
 	//m_markImpassable();
 
@@ -122,7 +135,7 @@ void PlayScene::Start()
 
 void PlayScene::GUI_Function()
 {
-	auto offset = glm::vec2(Config::TILE_SIZE * 0.5f, Config::TILE_SIZE * 0.5f);
+	//auto offset = glm::vec2(Config::TILE_SIZE * 0.5f, Config::TILE_SIZE * 0.5f);
 
 	// Always open with a NewFrame
 	ImGui::NewFrame();
@@ -393,4 +406,97 @@ Tile* PlayScene::m_getTile(const glm::vec2 grid_position) const
 	const auto row = grid_position.y;
 
 	return m_getTile(static_cast<int>(col), static_cast<int>(row));
+}
+
+void PlayScene::m_initializeTileMap()
+{
+	m_tileMap = "---------I----------";
+	m_tileMap += "---------I----------";
+	m_tileMap += "---------I----------";
+	m_tileMap += "--S------I----------";
+	m_tileMap += "---------I----------";
+	m_tileMap += "---------I----------";
+	m_tileMap += "-----I---I---I------";
+	m_tileMap += "-----I-------I------";
+	m_tileMap += "-----I-------I------";
+	m_tileMap += "-----I-------I------";
+	m_tileMap += "-----I-------I------";
+	m_tileMap += "-----I-------I-G----";
+	m_tileMap += "-----I-------I------";
+	m_tileMap += "-----I-------I------";
+	m_tileMap += "-----I-------I------";
+
+}
+
+void PlayScene::m_buildTileMap()
+{
+	for (int row = 0; row < Config::ROW_NUM; ++row) {
+		for (int col = 0; col < Config::COL_NUM; ++col) {
+
+			if (m_tileMap[(row * Config::COL_NUM) + col] == 'I') {
+
+				m_addObjectToGrid(m_pObstacles[(row * Config::COL_NUM) + col], col, row, TileStatus::IMPASSABLE);
+			}
+			if (m_tileMap[(row * Config::COL_NUM) + col] == 'S') {
+
+				m_addObjectToGrid(m_pStarShip, col, row, TileStatus::START);
+			}
+			if (m_tileMap[(row * Config::COL_NUM) + col] == 'G') {
+
+				m_addObjectToGrid(m_pTarget, col, row, TileStatus::GOAL);
+			}
+			if (m_tileMap[(row * Config::COL_NUM) + col] == '-') {
+
+				m_getTile(col, row) ->SetTileStatus(TileStatus::UNVISITED);
+				//m_addObjectToGrid(m_pStarShip, col, row, TileStatus::START);
+			}
+			
+		}
+	}
+
+
+}
+
+void PlayScene::m_updateTileMap(int col, int row, TileStatus status)
+{
+
+	switch (status) {
+	case TileStatus::UNVISITED:
+		m_tileMap[(row * Config::COL_NUM) + col] = '-';
+			break;
+	
+	case TileStatus::OPEN:
+		m_tileMap[(row * Config::COL_NUM) + col] = 'O';
+			break;
+	
+	case TileStatus::CLOSED:
+		m_tileMap[(row * Config::COL_NUM) + col] = 'C';
+			break;
+
+	case TileStatus::GOAL:
+		m_tileMap[(row * Config::COL_NUM) + col] = 'G';
+		break;
+
+	case TileStatus::START:
+		m_tileMap[(row * Config::COL_NUM) + col] = 'S';
+		break;
+
+	case TileStatus::IMPASSABLE:
+		m_tileMap[(row * Config::COL_NUM) + col] = 'I';
+		break;
+	
+	case TileStatus::PATH:
+		m_tileMap[(row * Config::COL_NUM) + col] = 'P';
+		break;
+	
+
+	}
+
+}
+
+void PlayScene::m_updateTileMap(glm::vec2 grid_position, TileStatus status)
+{
+
+	m_updateTileMap(static_cast<int>(grid_position.x), static_cast<int>(grid_position.y), status);
+
 }
