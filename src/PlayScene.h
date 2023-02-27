@@ -8,6 +8,8 @@
 #include "Tile.h"
 #include "Heuristic.h"
 #include "Obstacle.h"
+#include <queue>
+#include "TileComparator.h"
 
 class PlayScene : public Scene
 {
@@ -53,17 +55,22 @@ private:
 	void m_removeAllObstacles();
 
 
+	// tile lists for pathfinding
+	std::priority_queue<Tile*, std::vector<Tile*>, TileComparator> m_pOpenList;
+	std::list<Tile*> m_pPathList;
+	bool m_pathFound = false;
 
+
+	//std::vector<Tile*> m_pClosedList;
 
 	// calculate shortest path functions
 	void m_findShortestPath();
+	void m_buildPathList();
 	void m_displayPathList();
 	void m_resetPathFinding();
 	void m_resetSimulation();
 
-	// tile lists for pathfinding
-	std::vector<Tile*> m_pOpenList;
-	std::vector<Tile*> m_pClosedList;
+	
 	// TODO: some kind of data structure for the path list
 	// suggestions: a queue data structure or a linked list
 

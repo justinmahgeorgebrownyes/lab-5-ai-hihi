@@ -1,6 +1,7 @@
 #include "PlayScene.h"
 #include "Game.h"
 #include "EventManager.h"
+#include <Windows.h>
 
 // required for IMGUI
 #include "imgui.h"
@@ -112,7 +113,8 @@ void PlayScene::Start()
 	m_initializeTileMap();
 	m_buildTileMap();
 
-
+	m_computeTileCosts();
+	m_findShortestPath();
 	// Add the StarShip to the Scene
 	//m_addObjectToGrid(m_pStarShip, 1, 3, TileStatus::START);
 
@@ -380,19 +382,137 @@ void PlayScene::m_removeAllObstacles()
 
 void PlayScene::m_findShortestPath()
 {
-	
+	m_getTile(m_pStarShip->GetGridPosition())->SetTileParent(nullptr);
+	m_pOpenList.push(m_getTile(m_pStarShip->GetGridPosition()));
+	bool goal_found = false;
+
+	while (!m_pOpenList.empty() && !goal_found) {
+
+		const auto current_node = m_pOpenList.top();
+		std::cout << current_node->GetGridPosition().x << ", " << current_node->GetGridPosition().y << std::endl;
+
+		m_pOpenList.pop();
+		current_node->SetTileStatus(TileStatus::CLOSED);
+
+		for (auto neighbour : current_node->GetNeighbourTiles()) {
+
+			if (neighbour == nullptr || neighbour->GetTileStatus() == TileStatus::IMPASSABLE) {
+
+				continue;
+
+
+			}
+			if (neighbour->GetTileStatus() == TileStatus::GOAL) {
+
+				goal_found = true;
+				neighbour->SetTileParent(current_node);
+				std::cout << "Goal Found at: " << neighbour->GetGridPosition().x << ", " << neighbour->GetGridPosition().y << std::endl;
+				m_pPathList.push_front(neighbour);
+				break;
+
+
+
+			}
+			if (neighbour->GetTileStatus() == TileStatus::UNVISITED) {
+
+				neighbour->SetTileParent(current_node);
+				neighbour->SetTileStatus(TileStatus::OPEN);
+				m_pOpenList.push(neighbour);
+
+			}
+
+
+		}
+
+
+
+	}
+
+	if (goal_found) {
+
+		m_pathFound = true;
+		m_buildPathList();
+		m_displayPathList();
+	}
+	else {
+
+		const auto handle = GetStdHandle(STD_OUTPUT_HANDLE);
+		SetConsoleTextAttribute(handle, 4); // red
+		std::cout << "No Path Found!" << std::endl;
+		SetConsoleTextAttribute(handle, 15); // red
+
+	}
+
+
+}
+
+void PlayScene::m_buildPathList()
+{
+	while (m_pPathList.front()->GetTileParent() != nullptr) {
+
+		m_pPathList.push_front(m_pPathList.front()->GetTileParent());
+
+	}
+
+
 }
 
 void PlayScene::m_displayPathList()
 {
+	std::cout << "Total Path Length is: " << m_pPathList.size() - 1 << std:: endl;
+	std::cout << "Path LIst is :" << std::endl;
+	std::cout << "===============" << std::endl;
+	for (const auto node : m_pPathList) {
+		node->SetTileStatus(TileStatus::PATH);
+		std::cout << node->GetGridPosition().x << ", " << node->GetGridPosition().y << std::endl;
+	}
+
+
 }
 
 void PlayScene::m_resetPathFinding()
 {
+	while (!m_pOpenList.empty()) {
+		m_pOpenList.pop();
+	}
+
+	while (!m_pPathList.empty()) {
+		m_pPathList.pop_front();
+	}
+
+	m_pathFound = false;
+
+	for (const auto tile : m_pGrid) {
+
+		if (tile->GetTileStatus() == TileStatus::OPEN 
+			|| tile->GetTileStatus() == TileStatus::CLOSED 
+			|| tile->GetTileStatus() == TileStatus::PATH) {
+
+			tile->SetTileStatus(TileStatus::UNVISITED);
+
+
+		}
+
+	}
+
+
+	m_getTile(m_pStarShip->GetGridPosition())->SetTileStatus(TileStatus::START);
+	m_getTile(m_pTarget->GetGridPosition())->SetTileStatus(TileStatus::GOAL);
+
+
 }
 
 void PlayScene::m_resetSimulation()
 {
+	m_removeAllObstacles();
+	m_buildObstacles();
+	RemoveChild(m_pStarShip);
+	RemoveChild(m_pTarget);
+	m_initializeTileMap();
+	m_buildTileMap();
+	m_computeTileCosts();
+	m_resetPathFinding();
+
 }
 
 Tile* PlayScene::m_getTile(const int col, const int row) const
