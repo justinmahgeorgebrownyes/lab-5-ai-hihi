@@ -91,6 +91,11 @@ void PlayScene::m_moveGameObject(T*& object, int col, int row, TileStatus status
 
 	}
 
+	if (!m_pPathList.empty()) {
+
+		m_resetPathFinding();
+
+	}
 	//m_computeTileCosts();
 
 
@@ -114,7 +119,7 @@ void PlayScene::Start()
 	m_buildTileMap();
 
 	m_computeTileCosts();
-	m_findShortestPath();
+	//m_findShortestPath();
 	// Add the StarShip to the Scene
 	//m_addObjectToGrid(m_pStarShip, 1, 3, TileStatus::START);
 
@@ -159,6 +164,70 @@ void PlayScene::GUI_Function()
 
 	ImGui::Separator();
 
+
+	if (ImGui::CollapsingHeader("Tile Map")) {
+
+		static char* tile_map[300];
+
+		for (int i = 0; i < m_tileMap.length(); ++i) {
+
+			tile_map[i] = new char[i];
+			sprintf(tile_map[i], "%c + %d", m_tileMap[i], i);
+
+			if ((i % 20) != 0) {
+
+
+				ImGui::SameLine();
+
+			}
+
+			if (m_tileMap[i] == 'S') {
+
+
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.360f, 0.721f, 0.360f, 1.0f)); //green
+
+
+			}
+			else if (m_tileMap[i] == 'G') {
+
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.850f, 0.325f, 0.309f, 1.0f)); //red
+
+
+			}
+			else {
+
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.007f, 0.458f, 0.847f, 1.0f)); //blue
+
+			}
+
+			if (ImGui::Button(tile_map[i], ImVec2(15, 15)))
+			{
+				if (m_tileMap[i] != 'S' && m_tileMap[i] != 'G')
+				{
+					m_tileMap[i] = (m_tileMap[i] == '-') ? 'I' : '-';
+					m_removeAllObstacles();
+					m_buildObstacles();
+					m_buildTileMap();
+					m_resetPathFinding();
+				}
+			}
+
+			ImGui::PopStyleColor();
+
+
+		}
+
+	}
+
+
+
+
+
+
+
+
+	ImGui::Separator();
+
 	static int radio = static_cast<int>(m_currentHeuristic);
 	ImGui::Text("Heuristic Type");
 	ImGui::RadioButton("Manhattan", &radio, static_cast<int>(Heuristic::MANHATTAN));
@@ -169,15 +238,72 @@ void PlayScene::GUI_Function()
 	if(m_currentHeuristic != static_cast<Heuristic>(radio))
 	{
 		m_currentHeuristic = static_cast<Heuristic>(radio);
+
+		if (!m_pPathList.empty()) {
+
+			m_resetPathFinding();
+
+		}
+
+
 		m_computeTileCosts();
 	}
 
 	ImGui::Separator();
 
-	// StarShip Properties
+
+	if (ImGui::Button("find shortest path")) {
+
+		if (!m_pPathList.empty()) {
+
+			m_resetPathFinding();
+
+		}
+		m_findShortestPath();
+
+
+	}
+
+	if (m_pathFound) {
+		ImGui::SameLine();
+		ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Path Found! - Length: %d", (m_pPathList.size() - 1));
+	}
+
+	ImGui::Separator();
+
+	//position variable
 	static int start_position[2] = {
-		static_cast<int>(m_pStarShip->GetGridPosition().x),
-		static_cast<int>(m_pStarShip->GetGridPosition().y) };
+	static_cast<int>(m_pStarShip->GetGridPosition().x),
+	static_cast<int>(m_pStarShip->GetGridPosition().y) };
+
+	static int goal_position[2] = {
+	static_cast<int>(m_pTarget->GetGridPosition().x),
+	static_cast<int>(m_pTarget->GetGridPosition().y) };
+
+
+	if (ImGui::Button("Reset Path Finding")) {
+
+		m_resetPathFinding();
+
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Reset simulation")) {
+		m_resetSimulation();
+		start_position[0] = static_cast<int>(m_pStarShip->GetGridPosition().x);
+		start_position[1] = static_cast<int>(m_pStarShip->GetGridPosition().y);
+		start_position[0] = static_cast<int>(m_pTarget->GetGridPosition().x);
+		start_position[1] = static_cast<int>(m_pTarget->GetGridPosition().y);
+
+	}
+
+
+	ImGui::Separator();
+
+
+
+	// StarShip Properties
+
 	if(ImGui::SliderInt2("Start Position", start_position, 0, Config::COL_NUM - 1))
 	{
 		// constrain the object within max rows
@@ -195,9 +321,7 @@ void PlayScene::GUI_Function()
 	ImGui::Separator();
 
 	// Target Properties
-	static int goal_position[2] = {
-		static_cast<int>(m_pTarget->GetGridPosition().x),
-		static_cast<int>(m_pTarget->GetGridPosition().y) };
+
 	if (ImGui::SliderInt2("Goal Position", goal_position, 0, Config::COL_NUM - 1))
 	{
 		// constrain the object within max rows
